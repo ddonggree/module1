@@ -1,0 +1,1095 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 융합수업 렌즈 기록장</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root {
+  --navy: #003C82;
+  --navy-2: #1F5FA8;
+  --blue: #9EC4E7;
+  --pale: #E4EEF8;
+  --bg: #F3F6FA;
+  --card: #FFFFFF;
+  --ink: #1A1D23;
+  --muted: #5B6573;
+  --line: #D5DDE8;
+  --danger: #B42318;
+  --done: #C0392B;
+  --radius: 12px;
+  --font: "Noto Sans KR", "NanumGothic", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+}
+button, input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+/* ---------- top bar ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-inner {
+  max-width: 1080px; margin: 0 auto; padding: 10px 16px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.brand { font-weight: 700; color: var(--navy); font-size: 17px; margin-right: auto; cursor: pointer; }
+.brand small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--bg); }
+.seg button {
+  border: 0; background: transparent; padding: 6px 14px; border-radius: 999px; cursor: pointer;
+  font-size: 14px; font-weight: 500; color: var(--muted);
+}
+.seg button[aria-pressed="true"] { background: var(--navy); color: #fff; }
+.save-status { font-size: 12px; color: var(--muted); min-width: 90px; text-align: right; }
+
+main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 120px; }
+
+/* ---------- generic ---------- */
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 20px; margin-bottom: 16px;
+}
+h1 { font-size: 26px; margin: 0 0 6px; color: var(--navy); }
+h2 { font-size: 19px; margin: 0 0 4px; color: var(--navy); }
+h3 { font-size: 16px; margin: 0 0 8px; color: var(--navy); }
+.hint { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid var(--navy); background: var(--card); color: var(--navy);
+  padding: 9px 16px; border-radius: 10px; cursor: pointer; font-weight: 500; font-size: 15px;
+  min-height: 42px;
+}
+.btn:hover { background: var(--pale); }
+.btn.primary { background: var(--navy); color: #fff; }
+.btn.primary:hover { background: var(--navy-2); }
+.btn.ghost { border-color: var(--line); color: var(--muted); }
+.btn.danger { border-color: var(--danger); color: var(--danger); }
+.btn.small { padding: 4px 10px; min-height: 32px; font-size: 13px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+label.field { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 4px; }
+input[type="text"], input[type="number"], textarea {
+  width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px;
+  background: #fff; font-size: 15px; line-height: 1.5;
+}
+textarea { resize: vertical; min-height: 64px; }
+input:focus, textarea:focus, .btn:focus-visible, .seg button:focus-visible, .lens-btn:focus-visible, .tab:focus-visible {
+  outline: 3px solid var(--blue); outline-offset: 1px; border-color: var(--navy);
+}
+
+/* ---------- home ---------- */
+.home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+.home-card {
+  text-align: left; cursor: pointer; border: 1px solid var(--line); background: var(--card);
+  border-radius: var(--radius); padding: 24px; transition: border-color .15s, box-shadow .15s;
+}
+.home-card:hover { border-color: var(--navy); box-shadow: 0 4px 16px rgba(0, 60, 130, .10); }
+.home-card .tag { display: inline-block; background: var(--navy); color: #fff; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+.home-card h2 { margin-top: 12px; font-size: 21px; }
+.home-card ul { margin: 10px 0 0; padding-left: 20px; color: var(--muted); font-size: 15px; }
+.notice { background: var(--pale); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--navy); margin-top: 16px; }
+
+/* ---------- profile / lens ---------- */
+.profile-grid { display: grid; grid-template-columns: 140px 1fr; gap: 12px; margin-bottom: 16px; }
+.lens-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.lens-btn {
+  border: 1px solid var(--line); background: var(--pale); border-radius: 12px; padding: 10px 4px 8px;
+  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  color: var(--navy); font-weight: 700; font-size: 14px;
+}
+.lens-btn .glyph {
+  width: 38px; height: 38px; border-radius: 50%; background: var(--navy); color: #fff;
+  display: grid; place-items: center; font-size: 17px;
+}
+.lens-btn[aria-pressed="true"] { background: var(--navy); color: #fff; border-color: var(--navy); }
+.lens-btn[aria-pressed="true"] .glyph { background: #fff; color: var(--navy); }
+.lens-q { margin-top: 14px; background: var(--bg); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+.lens-q strong { color: var(--navy); }
+.lens-q ul { margin: 6px 0 0; padding-left: 20px; color: var(--muted); }
+.lens-warn { margin-top: 12px; color: var(--danger); font-size: 14px; font-weight: 500; }
+
+/* ---------- tabs ---------- */
+.tabs {
+  position: sticky; top: var(--topbar-h, 58px); z-index: 10; background: var(--bg);
+  display: flex; gap: 6px; padding: 8px 0; margin-bottom: 8px; overflow-x: auto;
+}
+.tab {
+  border: 1px solid var(--line); background: var(--card); padding: 8px 16px; border-radius: 999px;
+  cursor: pointer; font-weight: 500; white-space: nowrap; font-size: 15px;
+}
+.tab[aria-selected="true"] { background: var(--navy); color: #fff; border-color: var(--navy); }
+.tab .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--blue); margin-left: 6px; vertical-align: middle; }
+
+/* ---------- entries ---------- */
+.entry { border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 10px; background: #fff; }
+.entry-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.entry-head b { color: var(--navy); font-size: 15px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.col-choice textarea { background: var(--pale); }
+.crit { display: grid; grid-template-columns: 220px 1fr auto; gap: 10px; align-items: start; margin-bottom: 10px; }
+
+/* ---------- export ---------- */
+.preview {
+  white-space: pre-wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px; font-size: 13.5px; max-height: 320px; overflow: auto; margin: 0 0 14px;
+}
+
+/* ---------- word cloud ---------- */
+.cloud-wrap { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.cloud-wrap canvas { display: block; width: 100%; height: auto; }
+.cloud-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 15px; text-align: center; padding: 20px; }
+.cloud-wrap:fullscreen { display: flex; flex-direction: column; justify-content: center; border-radius: 0; }
+.drop {
+  border: 2px dashed var(--blue); border-radius: 12px; padding: 22px; text-align: center; color: var(--muted);
+  background: #fff; cursor: pointer;
+}
+.drop.over { background: var(--pale); border-color: var(--navy); }
+.src-list { list-style: none; padding: 0; margin: 12px 0 0; }
+.src-list li { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; background: #fff; font-size: 14px; }
+.src-list .type { font-size: 11px; font-weight: 700; color: #fff; background: var(--navy); border-radius: 6px; padding: 1px 7px; }
+.src-list .meta { color: var(--muted); font-size: 12px; margin-left: auto; white-space: nowrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 13.5px;
+}
+.chip[aria-pressed="true"] { background: var(--navy); color: #fff; border-color: var(--navy); }
+.chip.excluded { text-decoration: line-through; color: var(--muted); }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 14px 0; }
+.opts fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 0; }
+.opts legend { font-size: 13px; font-weight: 700; color: var(--navy); padding: 0 4px; }
+.opts label { display: flex; align-items: center; gap: 6px; font-size: 14px; margin: 3px 0; }
+.freq { width: 100%; border-collapse: collapse; font-size: 14px; }
+.freq th, .freq td { border-bottom: 1px solid var(--line); padding: 5px 6px; text-align: left; }
+.freq th { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+.freq td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.cloud-layout { display: grid; grid-template-columns: 1fr 260px; gap: 16px; margin-top: 14px; }
+
+/* ---------- timers ---------- */
+.big-timer { text-align: center; padding: 26px 16px; }
+.big-timer:fullscreen { display: flex; flex-direction: column; justify-content: center; background: #fff; }
+.big-digits {
+  font-size: clamp(72px, 20vw, 220px); font-weight: 700; color: var(--navy); line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: 2px; margin: 8px 0 18px;
+}
+.big-label { font-size: 18px; color: var(--muted); }
+.presets { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+.custom-min { width: 80px !important; text-align: center; }
+.done .big-digits, .done .mini-digits { color: var(--done); animation: blink 1s steps(2, start) 6; }
+@keyframes blink { to { visibility: hidden; } }
+
+.mini-timer {
+  position: fixed; right: 16px; bottom: 16px; z-index: 30;
+  background: var(--navy); color: #fff; border-radius: 16px; box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+  width: 250px; overflow: hidden;
+}
+.mini-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 14px; }
+.mini-digits { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; margin-right: auto; }
+.mini-timer.done { background: #fff; border: 2px solid var(--done); }
+.mini-timer .ibtn {
+  border: 0; background: rgba(255, 255, 255, .16); color: #fff; border-radius: 8px; min-width: 38px; height: 34px;
+  cursor: pointer; font-weight: 700; font-size: 13px; padding: 0 8px;
+}
+.mini-timer.done .ibtn { background: var(--pale); color: var(--navy); }
+.mini-panel { background: #fff; color: var(--ink); padding: 10px 12px 12px; border-top: 1px solid var(--line); }
+.mini-panel .presets { justify-content: flex-start; margin-bottom: 8px; }
+.mini-panel .btn { min-height: 34px; padding: 4px 10px; font-size: 14px; }
+.mini-timer.collapsed .mini-panel { display: none; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50;
+  background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 14px;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.toast.show { opacity: 1; }
+
+/* ---------- print ---------- */
+#print-area { display: none; }
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body { background: #fff; font-size: 11pt; }
+  body > *:not(#print-area) { display: none !important; }
+  #print-area { display: block; }
+  #print-area h1 { font-size: 17pt; color: var(--navy); margin: 0 0 2mm; }
+  #print-area .sub { color: var(--muted); margin-bottom: 5mm; }
+  #print-area h2 { font-size: 13pt; margin: 6mm 0 2mm; border-bottom: 1.5pt solid var(--navy); padding-bottom: 1mm; }
+  #print-area h3 { font-size: 11pt; margin: 3mm 0 1.5mm; }
+  #print-area table { width: 100%; border-collapse: collapse; margin-bottom: 3mm; page-break-inside: auto; }
+  #print-area th, #print-area td { border: .6pt solid #999; padding: 1.5mm 2mm; vertical-align: top; text-align: left; white-space: pre-wrap; }
+  #print-area th { background: var(--navy); color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #print-area tr { page-break-inside: avoid; }
+  #print-area .empty { color: #999; }
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 860px) {
+  .cloud-layout { grid-template-columns: 1fr; }
+  .lens-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 720px) {
+  .home-grid, .grid-2, .grid-3, .opts { grid-template-columns: 1fr; }
+  .profile-grid { grid-template-columns: 110px 1fr; }
+  .crit { grid-template-columns: 1fr auto; }
+  .crit textarea { grid-column: 1 / -1; }
+  h1 { font-size: 22px; }
+  .card { padding: 16px; }
+  .mini-timer { right: 10px; bottom: 10px; width: 230px; }
+  .save-status { min-width: 0; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand" id="brand" role="button" tabindex="0">AI 융합수업 렌즈 기록장<small>AIEDAP 마스터교원 신규연수 · 모듈1</small></div>
+    <span class="save-status" id="saveStatus" aria-live="polite"></span>
+    <div class="seg" role="group" aria-label="모드 선택">
+      <button type="button" data-mode="student" aria-pressed="false">연수생</button>
+      <button type="button" data-mode="teacher" aria-pressed="false">강사</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ================= HOME ================= -->
+  <section id="view-home">
+    <h1>AI 융합수업 렌즈 기록장</h1>
+    <p class="hint">우수사례 A·B·C를 6가지 분석 렌즈로 살펴보고, 기록을 모아 워드클라우드로 나눕니다.</p>
+    <div class="home-grid">
+      <button type="button" class="home-card" data-mode="student">
+        <span class="tag">연수생</span>
+        <h2>내 렌즈로 기록하기</h2>
+        <ul>
+          <li>렌즈 선택 → 사례 A·B·C 관찰과 의사결정 지점 기록</li>
+          <li>AI 융합수업 기준 정리</li>
+          <li>텍스트 복사·PDF·기록 파일로 패들렛에 올리기</li>
+        </ul>
+      </button>
+      <button type="button" class="home-card" data-mode="teacher">
+        <span class="tag">강사</span>
+        <h2>타이머 · 워드클라우드</h2>
+        <ul>
+          <li>화면에 띄우는 큰 타이머 (2분·10분·20분)</li>
+          <li>기록 파일·PDF·텍스트를 모아 워드클라우드 생성</li>
+          <li>렌즈별로 보기, 단어 제외, PNG 저장</li>
+        </ul>
+      </button>
+    </div>
+    <p class="notice">기록은 이 기기의 브라우저에만 자동 저장됩니다. 다른 기기로 옮기거나 제출할 때는 [내보내기] 탭을 이용하세요.</p>
+  </section>
+
+  <!-- ================= STUDENT ================= -->
+  <section id="view-student" hidden>
+    <div class="card">
+      <div class="profile-grid">
+        <div><label class="field" for="pGroup">조</label><input type="text" id="pGroup" data-path="profile.group" placeholder="예: 3" inputmode="numeric" autocomplete="off"></div>
+        <div><label class="field" for="pName">이름 (선택)</label><input type="text" id="pName" data-path="profile.name" placeholder="비워 두어도 됩니다" autocomplete="off"></div>
+      </div>
+      <h3>내 렌즈</h3>
+      <div class="lens-grid" id="lensGrid" role="group" aria-label="분석 렌즈 선택"></div>
+      <div id="lensInfo"></div>
+    </div>
+
+    <nav class="tabs" id="tabs" role="tablist" aria-label="기록 영역"></nav>
+    <div id="tabPanel"></div>
+  </section>
+
+  <!-- ================= TEACHER ================= -->
+  <section id="view-teacher" hidden>
+    <div class="card big-timer" id="bigTimer">
+      <div class="big-label" id="bigLabel">타이머</div>
+      <div class="big-digits" id="bigDigits" aria-live="off">02:00</div>
+      <div class="presets" id="bigPresets"></div>
+      <div class="row" style="justify-content:center">
+        <button type="button" class="btn primary" data-timer="toggle" id="bigToggle">시작</button>
+        <button type="button" class="btn" data-timer="reset">초기화</button>
+        <button type="button" class="btn ghost" id="bigFull">전체 화면</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>워드클라우드 만들기</h2>
+      <p class="hint">연수생이 올린 기록 파일(.json), PDF, 텍스트 파일을 여러 개 한꺼번에 넣을 수 있습니다. 텍스트를 직접 붙여넣어도 됩니다.</p>
+      <div class="drop" id="drop" role="button" tabindex="0">
+        파일을 여기로 끌어오거나 눌러서 선택하세요<br><small>.json(기록 파일) · .pdf · .txt</small>
+      </div>
+      <input type="file" id="fileInput" accept=".json,.pdf,.txt,application/json,application/pdf,text/plain" multiple hidden>
+      <div style="margin-top:12px">
+        <label class="field" for="pasteText">텍스트 붙여넣기 (패들렛 내용 등)</label>
+        <textarea id="pasteText" rows="3" placeholder="여기에 붙여넣고 [텍스트 추가]를 누르세요"></textarea>
+        <div class="row" style="margin-top:8px"><button type="button" class="btn small" id="addPaste">텍스트 추가</button></div>
+      </div>
+      <ul class="src-list" id="srcList"></ul>
+      <p class="hint" id="srcSummary" style="margin:6px 0 0"></p>
+
+      <div class="opts">
+        <fieldset>
+          <legend>기록 파일에서 포함할 항목</legend>
+          <label><input type="checkbox" id="catCrit" checked> 기준 정리 (키워드 2배 반영)</label>
+          <label><input type="checkbox" id="catObs" checked> 렌즈 관찰 기록</label>
+          <label><input type="checkbox" id="catDec"> 의사결정 지점 (나의 생각)</label>
+        </fieldset>
+        <fieldset>
+          <legend>렌즈별로 보기</legend>
+          <div class="chips" id="lensFilter"></div>
+          <p class="hint" style="margin:6px 0 0;font-size:12.5px">렌즈를 고르면 해당 렌즈 기록 파일만 반영됩니다 (PDF·텍스트는 '전체'에서만).</p>
+          <label style="margin-top:8px">표시할 단어 수 <input type="range" id="maxWords" min="20" max="100" step="10" value="60" style="flex:1"> <b id="maxWordsVal">60</b></label>
+        </fieldset>
+      </div>
+      <div class="row">
+        <button type="button" class="btn primary" id="genCloud">워드클라우드 생성</button>
+        <button type="button" class="btn" id="savePng" disabled>PNG 저장</button>
+        <button type="button" class="btn ghost" id="cloudFull" disabled>전체 화면</button>
+      </div>
+
+      <div class="cloud-layout">
+        <div>
+          <div class="cloud-wrap" id="tCloudWrap">
+            <canvas id="tCloud" width="1600" height="1000"></canvas>
+            <div class="cloud-empty" id="tCloudEmpty">자료를 넣고 [워드클라우드 생성]을 누르세요</div>
+          </div>
+          <p class="hint" style="margin:8px 0 0">단어를 누르면 워드클라우드에서 제외됩니다.</p>
+        </div>
+        <div>
+          <h3>많이 나온 단어</h3>
+          <table class="freq"><thead><tr><th>#</th><th>단어</th><th style="text-align:right">횟수</th><th></th></tr></thead><tbody id="tFreq"></tbody></table>
+          <h3 style="margin-top:14px">제외한 단어</h3>
+          <div class="chips" id="tExcluded"><span class="hint" style="margin:0">없음</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- mini timer (student mode) -->
+<div class="mini-timer collapsed" id="miniTimer" hidden>
+  <div class="mini-bar">
+    <span class="mini-digits" id="miniDigits">02:00</span>
+    <button type="button" class="ibtn" data-timer="toggle" id="miniToggle" aria-label="타이머 시작">시작</button>
+    <button type="button" class="ibtn" id="miniExpand" aria-expanded="false" aria-label="타이머 설정 열기">설정</button>
+  </div>
+  <div class="mini-panel">
+    <div class="presets" id="miniPresets"></div>
+    <div class="row"><button type="button" class="btn ghost" data-timer="reset">초기화</button></div>
+  </div>
+</div>
+
+<div id="print-area"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+"use strict";
+
+// ================== DATA ==================
+const LENSES = [
+  { id: "edu",  g: "교", name: "교육적", q: "AI 활용이 학습목표 달성에 어떻게 기여했는가", pts: ["성취기준과 AI 활동의 연결", "교과 고유의 사고 방식이 구현된 장면"] },
+  { id: "lrn",  g: "학", name: "학습자", q: "학생이 스스로 생각하고 선택할 기회가 어디에 있었는가", pts: ["학생의 판단이 필요한 지점", "AI 결과를 검토하거나 수정한 흔적"] },
+  { id: "tech", g: "기", name: "기술적", q: "활용한 기술이 수업 목적과 학생 수준에 맞았는가", pts: ["도구 선택의 이유", "학생이 다루기에 적절한 수준이었는지"] },
+  { id: "eval", g: "평", name: "평가",   q: "학생의 사고 과정과 AI 활용 과정을 어떻게 확인했는가", pts: ["수집한 학습 증거의 종류", "과정을 남기는 방법"] },
+  { id: "eth",  g: "윤", name: "윤리적", q: "AI 활용의 한계와 책임을 어떻게 다루었는가", pts: ["오류·편향·저작권·개인정보 안내", "문제가 생겼을 때의 대응"] },
+  { id: "exec", g: "실", name: "실행",   q: "시간·기기·학생 여건에서 실행 가능한 설계였는가", pts: ["계획과 실제 소요 차시의 차이", "다른 교실에서 재현할 때 필요한 조건"] },
+];
+const lensById = id => LENSES.find(l => l.id === id);
+const CASES = ["A", "B", "C"];
+const TABS = [
+  { id: "A", label: "사례 A" }, { id: "B", label: "사례 B" }, { id: "C", label: "사례 C" },
+  { id: "crit", label: "기준 정리" }, { id: "export", label: "내보내기" },
+];
+const STORE_KEY = "aiedap-lens-notes-v1";
+const MODE_KEY = "aiedap-lens-mode";
+const TAB_KEY = "aiedap-lens-tab";
+const APP_ID = "aiedap-lens-notes";
+
+// ================== STORAGE (safe) ==================
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+
+const blankCase = () => ({
+  obs: [{ scene: "", note: "" }, { scene: "", note: "" }],
+  dec: [{ s: "", m: "", p: "" }, { s: "", m: "", p: "" }, { s: "", m: "", p: "" }],
+});
+const blankState = () => ({
+  app: APP_ID, version: 1,
+  profile: { group: "", name: "", lens: "" },
+  cases: { A: blankCase(), B: blankCase(), C: blankCase() },
+  criteria: [{ k: "", d: "" }, { k: "", d: "" }, { k: "", d: "" }],
+  updatedAt: null,
+});
+
+function normalizeState(raw) {
+  const s = blankState();
+  if (!raw || typeof raw !== "object") return s;
+  const str = v => (typeof v === "string" ? v : "");
+  if (raw.profile) {
+    s.profile.group = str(raw.profile.group);
+    s.profile.name = str(raw.profile.name);
+    s.profile.lens = lensById(raw.profile.lens) ? raw.profile.lens : "";
+  }
+  CASES.forEach(c => {
+    const rc = raw.cases && raw.cases[c];
+    if (!rc) return;
+    if (Array.isArray(rc.obs) && rc.obs.length) s.cases[c].obs = rc.obs.map(o => ({ scene: str(o && o.scene), note: str(o && o.note) }));
+    if (Array.isArray(rc.dec) && rc.dec.length) s.cases[c].dec = rc.dec.map(d => ({ s: str(d && d.s), m: str(d && d.m), p: str(d && d.p) }));
+  });
+  if (Array.isArray(raw.criteria) && raw.criteria.length) s.criteria = raw.criteria.map(c => ({ k: str(c && c.k), d: str(c && c.d) }));
+  s.updatedAt = str(raw.updatedAt) || null;
+  return s;
+}
+
+let state = (() => {
+  const raw = store.get(STORE_KEY);
+  if (!raw) return blankState();
+  try { return normalizeState(JSON.parse(raw)); } catch (e) { return blankState(); }
+})();
+
+let saveTimer = null;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  $("#saveStatus").textContent = "저장 중…";
+  saveTimer = setTimeout(saveNow, 400);
+}
+function saveNow() {
+  state.updatedAt = new Date().toISOString();
+  const ok = store.set(STORE_KEY, JSON.stringify(state));
+  const t = new Date();
+  $("#saveStatus").textContent = ok
+    ? `저장됨 ${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`
+    : "브라우저 저장 불가 · 내보내기로 보관하세요";
+}
+
+// ================== HELPERS ==================
+function $(sel, root = document) { return root.querySelector(sel); }
+function h(tag, attrs = {}, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k === "text") el.textContent = v;
+    else if (k === "value") el.value = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  kids.flat().forEach(c => { if (c !== null && c !== undefined && c !== false) el.append(c.nodeType ? c : document.createTextNode(c)); });
+  return el;
+}
+function getPath(obj, path) { return path.split(".").reduce((o, k) => (o == null ? undefined : o[k]), obj); }
+function setPath(obj, path, val) {
+  const ks = path.split("."); const last = ks.pop();
+  const tgt = ks.reduce((o, k) => o[k], obj);
+  tgt[last] = val;
+}
+let toastTimer = null;
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+function download(name, blob) {
+  const a = h("a", { href: URL.createObjectURL(blob), download: name });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function safeName(s) { return String(s).replace(/[\\/:*?"<>|\s]+/g, "_").replace(/^_+|_+$/g, ""); }
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) {
+    const ta = h("textarea", { value: text, style: "position:fixed;left:-9999px" });
+    document.body.append(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch (e2) {}
+    ta.remove(); return ok;
+  }
+}
+function autoGrow(ta) { ta.style.height = "auto"; ta.style.height = Math.max(64, ta.scrollHeight + 2) + "px"; }
+
+// ================== MODE ==================
+let mode = "home";
+function setMode(m) {
+  mode = m;
+  $("#view-home").hidden = m !== "home";
+  $("#view-student").hidden = m !== "student";
+  $("#view-teacher").hidden = m !== "teacher";
+  $("#miniTimer").hidden = m !== "student";
+  $("#saveStatus").hidden = m !== "student";
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
+  if (m !== "home") store.set(MODE_KEY, m);
+  if (m === "student") renderStudent();
+  syncTopbar();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+$("#brand").addEventListener("click", () => setMode("home"));
+$("#brand").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMode("home"); } });
+
+// ================== STUDENT ==================
+let activeTab = TABS.some(t => t.id === store.get(TAB_KEY)) ? store.get(TAB_KEY) : "A";
+
+function renderStudent() {
+  $("#pGroup").value = state.profile.group;
+  $("#pName").value = state.profile.name;
+  renderLens();
+  renderTabs();
+  renderPanel();
+}
+
+function renderLens() {
+  const grid = $("#lensGrid"); grid.textContent = "";
+  LENSES.forEach(l => {
+    grid.append(h("button", {
+      type: "button", class: "lens-btn", "aria-pressed": String(state.profile.lens === l.id),
+      onclick: () => { state.profile.lens = state.profile.lens === l.id ? "" : l.id; scheduleSave(); renderLens(); if (activeTab !== "export") renderPanel(); },
+    }, h("span", { class: "glyph", "aria-hidden": "true", text: l.g }), l.name));
+  });
+  const info = $("#lensInfo"); info.textContent = "";
+  const l = lensById(state.profile.lens);
+  if (!l) { info.append(h("p", { class: "lens-warn", text: "먼저 도입에서 배정받은 렌즈를 선택하세요." })); return; }
+  info.append(h("div", { class: "lens-q" },
+    h("strong", { text: `${l.name} 관점 · ` }), l.q,
+    h("ul", {}, l.pts.map(p => h("li", { text: p })))));
+}
+
+function caseHasContent(c) {
+  const cs = state.cases[c];
+  return cs.obs.some(o => o.scene.trim() || o.note.trim()) || cs.dec.some(d => d.s.trim() || d.m.trim() || d.p.trim());
+}
+function renderTabs() {
+  const tabs = $("#tabs"); tabs.textContent = "";
+  TABS.forEach(t => {
+    const filled = CASES.includes(t.id) ? caseHasContent(t.id) : (t.id === "crit" ? state.criteria.some(c => c.k.trim() || c.d.trim()) : false);
+    tabs.append(h("button", {
+      type: "button", class: "tab", role: "tab", "aria-selected": String(activeTab === t.id),
+      onclick: () => { activeTab = t.id; store.set(TAB_KEY, t.id); renderTabs(); renderPanel(); },
+    }, t.label, filled ? h("span", { class: "dot", title: "기록 있음" }) : null));
+  });
+}
+
+function field(label, path, opts = {}) {
+  const id = "f_" + path.replace(/\./g, "_");
+  const el = opts.input
+    ? h("input", { type: "text", id, "data-path": path, value: getPath(state, path) || "", placeholder: opts.ph || "", autocomplete: "off" })
+    : h("textarea", { id, "data-path": path, rows: opts.rows || 2, placeholder: opts.ph || "" });
+  if (!opts.input) el.value = getPath(state, path) || "";
+  return h("div", { class: opts.cls || "" }, h("label", { class: "field", for: id, text: label }), el);
+}
+
+function renderPanel() {
+  const p = $("#tabPanel"); p.textContent = "";
+  if (CASES.includes(activeTab)) p.append(renderCase(activeTab));
+  else if (activeTab === "crit") p.append(renderCriteria());
+  else p.append(renderExport());
+  p.querySelectorAll("textarea").forEach(autoGrow);
+}
+
+function renderCase(c) {
+  const cs = state.cases[c];
+  const l = lensById(state.profile.lens);
+  const wrap = h("div");
+  const obsCard = h("div", { class: "card" },
+    h("h2", { text: `사례 ${c} · 렌즈 관찰 기록` }),
+    h("p", { class: "hint", text: l ? `${l.name} 렌즈로 본 인상적인 장면과 그 근거를 적어요. (${l.q})` : "내 렌즈로 본 인상적인 장면과 그 근거를 적어요." }));
+  cs.obs.forEach((o, i) => {
+    obsCard.append(h("div", { class: "entry" },
+      h("div", { class: "entry-head" }, h("b", { text: `관찰 ${i + 1}` }),
+        cs.obs.length > 1 ? h("button", { type: "button", class: "btn ghost small", onclick: () => removeRow(`cases.${c}.obs`, i), text: "삭제" }) : null),
+      h("div", { class: "grid-2" },
+        field("장면", `cases.${c}.obs.${i}.scene`, { ph: "예: AI 트리가 학생 트리와 달랐던 장면" }),
+        field("내 렌즈로 본 점 · 근거", `cases.${c}.obs.${i}.note`, { ph: "무엇이 보였고, 왜 그렇게 판단했는지" }))));
+  });
+  obsCard.append(h("button", { type: "button", class: "btn small", onclick: () => addRow(`cases.${c}.obs`, { scene: "", note: "" }), text: "+ 관찰 추가" }));
+
+  const decCard = h("div", { class: "card" },
+    h("h2", { text: `사례 ${c} · 의사결정 지점 기록` }),
+    h("p", { class: "hint", text: "발표가 멈추면 '상황'과 '나의 생각'을 먼저 적고, '발표자의 선택'은 공개된 뒤에 적어요." }));
+  cs.dec.forEach((d, i) => {
+    decCard.append(h("div", { class: "entry" },
+      h("div", { class: "entry-head" }, h("b", { text: `의사결정 지점 ${i + 1}` }),
+        cs.dec.length > 1 ? h("button", { type: "button", class: "btn ghost small", onclick: () => removeRow(`cases.${c}.dec`, i), text: "삭제" }) : null),
+      h("div", { class: "grid-3" },
+        field("상황", `cases.${c}.dec.${i}.s`, { rows: 3 }),
+        field("나의 생각", `cases.${c}.dec.${i}.m`, { rows: 3 }),
+        field("발표자의 선택", `cases.${c}.dec.${i}.p`, { rows: 3, cls: "col-choice" }))));
+  });
+  decCard.append(h("button", { type: "button", class: "btn small", onclick: () => addRow(`cases.${c}.dec`, { s: "", m: "", p: "" }), text: "+ 지점 추가" }));
+  wrap.append(obsCard, decCard);
+  return wrap;
+}
+
+function renderCriteria() {
+  const card = h("div", { class: "card" },
+    h("h2", { text: "AI 융합수업 기준 정리" }),
+    h("p", { class: "hint", text: "세 사례를 렌즈로 살펴보며 떠오른 '좋은 AI 융합수업의 기준'을 적어요. 키워드는 워드클라우드에 두 배로 반영됩니다." }));
+  state.criteria.forEach((c, i) => {
+    const kid = `crit_k_${i}`, did = `crit_d_${i}`;
+    const ta = h("textarea", { id: did, "data-path": `criteria.${i}.d`, rows: 2, placeholder: "한 줄 설명 (어느 사례의 어떤 장면에서 나왔는지)", "aria-label": `기준 ${i + 1} 설명` });
+    ta.value = c.d;
+    card.append(h("div", { class: "crit" },
+      h("input", { type: "text", id: kid, "data-path": `criteria.${i}.k`, value: c.k, placeholder: `기준 ${i + 1} 키워드`, "aria-label": `기준 ${i + 1} 키워드`, autocomplete: "off" }),
+      ta,
+      state.criteria.length > 1 ? h("button", { type: "button", class: "btn ghost small", onclick: () => removeRow("criteria", i), text: "삭제" }) : h("span")));
+  });
+  card.append(h("button", { type: "button", class: "btn small", onclick: () => addRow("criteria", { k: "", d: "" }), text: "+ 기준 추가" }));
+  return card;
+}
+
+function addRow(path, blank) { getPath(state, path).push(blank); scheduleSave(); renderTabs(); renderPanel(); }
+function removeRow(path, i) {
+  const arr = getPath(state, path); const row = arr[i];
+  const hasText = Object.values(row).some(v => String(v).trim());
+  if (hasText && !confirm("이 칸의 내용을 삭제할까요?")) return;
+  arr.splice(i, 1); scheduleSave(); renderTabs(); renderPanel();
+}
+
+// input delegation (profile + panels)
+document.addEventListener("input", e => {
+  const path = e.target.dataset && e.target.dataset.path;
+  if (!path || mode !== "student") return;
+  setPath(state, path, e.target.value);
+  if (e.target.tagName === "TEXTAREA") autoGrow(e.target);
+  scheduleSave();
+});
+document.addEventListener("change", e => { if (e.target.dataset && e.target.dataset.path && mode === "student") renderTabs(); });
+
+// ---------- export ----------
+function lensName() { const l = lensById(state.profile.lens); return l ? l.name : "렌즈 미선택"; }
+function headerLine() {
+  const parts = [];
+  if (state.profile.group.trim()) parts.push(`${state.profile.group.trim()}조`);
+  if (state.profile.name.trim()) parts.push(state.profile.name.trim());
+  parts.push(`${lensName()} 렌즈`);
+  return parts.join(" · ");
+}
+function exportText() {
+  const L = [`[AI 융합수업 렌즈 기록] ${headerLine()}`];
+  const one = s => s.trim().replace(/\s*\n\s*/g, " / ");
+  CASES.forEach(c => {
+    const cs = state.cases[c];
+    const obs = cs.obs.filter(o => o.scene.trim() || o.note.trim());
+    const dec = cs.dec.filter(d => d.s.trim() || d.m.trim() || d.p.trim());
+    if (!obs.length && !dec.length) return;
+    L.push("", `■ 사례 ${c}`);
+    obs.forEach((o, i) => L.push(`- 관찰 ${i + 1}: ${one(o.scene) || "(장면 미기록)"}${o.note.trim() ? " → " + one(o.note) : ""}`));
+    dec.forEach((d, i) => {
+      L.push(`- 의사결정 지점 ${i + 1}`);
+      L.push(`  · 상황: ${one(d.s) || "-"}`);
+      L.push(`  · 나의 생각: ${one(d.m) || "-"}`);
+      L.push(`  · 발표자의 선택: ${one(d.p) || "-"}`);
+    });
+  });
+  const crit = state.criteria.filter(c => c.k.trim() || c.d.trim());
+  if (crit.length) {
+    L.push("", "■ AI 융합수업 기준");
+    crit.forEach(c => L.push(`- ${c.k.trim() || "(키워드 없음)"}${c.d.trim() ? ": " + one(c.d) : ""}`));
+  }
+  if (L.length === 1) L.push("", "(아직 기록이 없습니다)");
+  return L.join("\n");
+}
+
+function renderExport() {
+  const wrap = h("div");
+  const pre = h("pre", { class: "preview", text: exportText() });
+  const fileIn = h("input", { type: "file", accept: ".json,application/json", hidden: true, onchange: e => importFile(e.target.files[0]) });
+  wrap.append(h("div", { class: "card" },
+    h("h2", { text: "패들렛에 올리기" }),
+    h("p", { class: "hint", text: "① 텍스트를 복사해 패들렛에 붙여넣거나 ② PDF 또는 기록 파일을 첨부하세요. 기록 파일(.json)을 올리면 강사가 렌즈별 워드클라우드로 모을 수 있습니다." }),
+    pre,
+    h("div", { class: "row" },
+      h("button", { type: "button", class: "btn primary", onclick: async () => toast((await copyText(exportText())) ? "복사했습니다. 패들렛에 붙여넣으세요." : "복사하지 못했습니다. 미리보기 글을 직접 선택해 복사하세요.") , text: "텍스트 복사" }),
+      h("button", { type: "button", class: "btn", onclick: printReport, text: "PDF로 저장" }),
+      h("button", { type: "button", class: "btn", onclick: exportJson, text: "기록 파일 내려받기 (.json)" })),
+    h("p", { class: "hint", style: "margin:10px 0 0;font-size:13px", text: "PDF로 저장: 인쇄 창에서 대상(프린터)을 'PDF로 저장'으로 고르세요." })));
+
+  const canvas = h("canvas", { width: 1600, height: 1000, id: "sCloud" });
+  const empty = h("div", { class: "cloud-empty", id: "sCloudEmpty", text: "[내 워드클라우드 보기]를 누르세요" });
+  wrap.append(h("div", { class: "card" },
+    h("h2", { text: "내 기록 워드클라우드" }),
+    h("p", { class: "hint", text: "기준 정리와 관찰 기록, 나의 생각에서 단어를 뽑습니다." }),
+    h("div", { class: "cloud-wrap" }, canvas, empty),
+    h("div", { class: "row", style: "margin-top:10px" },
+      h("button", { type: "button", class: "btn", onclick: () => drawStudentCloud(), text: "내 워드클라우드 보기" }),
+      h("button", { type: "button", class: "btn ghost", onclick: () => saveCanvasPng(canvas, "내_워드클라우드"), text: "PNG 저장" }))));
+
+  wrap.append(h("div", { class: "card" },
+    h("h2", { text: "기록 관리" }),
+    h("p", { class: "hint", text: "다른 기기로 옮길 때는 기록 파일을 내려받은 뒤 새 기기에서 불러오세요." }),
+    h("div", { class: "row" },
+      h("button", { type: "button", class: "btn", onclick: () => fileIn.click(), text: "기록 파일 불러오기" }),
+      h("button", { type: "button", class: "btn danger", onclick: clearAll, text: "모든 기록 지우기" }),
+      fileIn)));
+  return wrap;
+}
+
+function exportJson() {
+  saveNow();
+  const name = safeName(`렌즈기록_${state.profile.group ? state.profile.group + "조" : "조미입력"}_${lensName()}${state.profile.name ? "_" + state.profile.name : ""}`) + ".json";
+  download(name, new Blob([JSON.stringify(state, null, 2)], { type: "application/json" }));
+  toast("기록 파일을 내려받았습니다.");
+}
+async function importFile(file) {
+  if (!file) return;
+  try {
+    const raw = JSON.parse(await file.text());
+    if (raw.app !== APP_ID) throw new Error("형식");
+    if (!confirm("지금 기록을 불러온 파일 내용으로 바꿀까요?")) return;
+    state = normalizeState(raw); saveNow(); renderStudent(); toast("기록을 불러왔습니다.");
+  } catch (e) { toast("이 앱에서 내려받은 기록 파일(.json)만 불러올 수 있습니다."); }
+}
+function clearAll() {
+  if (!confirm("이 기기에 저장된 모든 기록을 지울까요? 되돌릴 수 없습니다.")) return;
+  state = blankState(); saveNow(); activeTab = "A"; renderStudent(); toast("기록을 지웠습니다.");
+}
+
+function printReport() {
+  const area = $("#print-area"); area.textContent = "";
+  area.append(h("h1", { text: "AI 융합수업 렌즈 기록" }),
+    h("div", { class: "sub", text: `${headerLine()} · ${new Date().toLocaleDateString("ko-KR")}` }));
+  const l = lensById(state.profile.lens);
+  if (l) area.append(h("div", { class: "sub", text: `${l.name} 관점: ${l.q}` }));
+  CASES.forEach(c => {
+    const cs = state.cases[c];
+    area.append(h("h2", { text: `사례 ${c}` }));
+    const obs = cs.obs.filter(o => o.scene.trim() || o.note.trim());
+    area.append(h("h3", { text: "렌즈 관찰 기록" }));
+    area.append(obs.length
+      ? h("table", {}, h("thead", {}, h("tr", {}, h("th", { style: "width:38%", text: "장면" }), h("th", { text: "내 렌즈로 본 점 · 근거" }))),
+          h("tbody", {}, obs.map(o => h("tr", {}, h("td", { text: o.scene }), h("td", { text: o.note })))))
+      : h("p", { class: "empty", text: "기록 없음" }));
+    const dec = cs.dec.filter(d => d.s.trim() || d.m.trim() || d.p.trim());
+    area.append(h("h3", { text: "의사결정 지점 기록" }));
+    area.append(dec.length
+      ? h("table", {}, h("thead", {}, h("tr", {}, h("th", { text: "상황" }), h("th", { text: "나의 생각" }), h("th", { text: "발표자의 선택" }))),
+          h("tbody", {}, dec.map(d => h("tr", {}, h("td", { text: d.s }), h("td", { text: d.m }), h("td", { text: d.p })))))
+      : h("p", { class: "empty", text: "기록 없음" }));
+  });
+  const crit = state.criteria.filter(c => c.k.trim() || c.d.trim());
+  area.append(h("h2", { text: "AI 융합수업 기준" }));
+  area.append(crit.length
+    ? h("table", {}, h("thead", {}, h("tr", {}, h("th", { style: "width:30%", text: "키워드" }), h("th", { text: "설명" }))),
+        h("tbody", {}, crit.map(c => h("tr", {}, h("td", { text: c.k }), h("td", { text: c.d })))))
+    : h("p", { class: "empty", text: "기록 없음" }));
+  window.print();
+}
+
+// ================== TEXT → WORDS ==================
+const STOP = new Set(("것 수 등 및 더 그 이 저 때 중 안 위해 통해 대한 대해 위한 통한 있다 있는 있음 있어 있고 있었다 있었음 없다 없는 없음 않고 않은 않음 하다 되다 이다 경우 정도 우리 저희 제가 저는 나는 그리고 하지만 그러나 또는 그래서 따라서 또한 이런 그런 저런 어떤 어떻게 무엇 무엇을 왜 같은 같이 모든 각 좀 잘 많이 가장 매우 너무 다시 먼저 이후 이번 지금 오늘 좋은 많은 높은 다른 여러 대부분 정말 모두 부분 내용 점 것이 것을 것은 거 이것 그것 여기 거기 하면 해서 해야 할 한 된 될 하는 되는 입니다 습니다 합니다 했습니다 the and of to in is for on with").split(/\s+/));
+// words that come from the print/PDF template itself
+const TEMPLATE_STOP = new Set("사례 상황 생각 발표자 발표자의 선택 장면 근거 관찰 기록 지점 의사결정 렌즈 관점 키워드 설명 미기록 미입력 없음".split(" "));
+const PROTECT = new Set(["전문가", "평가", "추가", "참가", "결과", "효과", "성과", "교과", "과정", "스스로", "새로", "서로", "따로", "별로", "주로"]);
+const VERB_END = [["하였습니다", ""], ["했습니다", ""], ["합니다", ""], ["했어요", ""], ["해요", ""], ["돼요", ""], ["하였다", ""], ["적으로", "적"], ["했다", ""], ["한다", ""], ["하다", ""], ["하는", ""], ["하고", ""], ["하며", ""], ["하기", ""], ["하여", ""], ["해서", ""], ["하게", ""], ["하면", ""], ["해야", ""], ["했던", ""], ["하던", ""], ["되는", ""], ["된다", ""], ["되어", ""], ["되게", ""], ["적인", "적"], ["됨", ""], ["함", ""]];
+// leftover verb/adjective forms (예: 달랐던, 쉽게, 아니라, 만든) are dropped
+const isInflected = w => /[가-힣]/.test(w) && !PROTECT.has(w) &&
+  (/다$/.test(w) || /(아요|어요|해요|예요|에요|네요|지요|세요|래요|라요|나요|까요|죠)$/.test(w) || (/[던게진운]$/.test(w) && w.length <= 3) || /(어서|아서|어도|아도)$/.test(w) ||
+   /^(아니|아니라|아니고|만든|만들어|만들고|다른|같은|어떤|거랑|나의)$/.test(w));
+const JOSA = ["에서는", "에게서", "으로써", "으로서", "으로는", "에서도", "이라는", "이라고", "까지", "부터", "에서", "에게", "한테", "으로", "처럼", "보다", "이나", "이며", "에는", "에도", "와의", "과의", "로서", "로써", "로는", "라는", "라고", "이고", "은", "는", "이", "가", "을", "를", "의", "에", "와", "과", "도", "만", "로"];
+
+function stripSuffix(w) {
+  if (PROTECT.has(w)) return w;
+  for (const [suf, rep] of VERB_END) {
+    if (w.endsWith(suf) && w.length - suf.length + rep.length >= 2) { w = w.slice(0, -suf.length) + rep; break; }
+  }
+  // 조사는 두 겹까지 뗀다 (예: 교사에게만 → 교사에게 → 교사)
+  for (let pass = 0; pass < 2; pass++) {
+    if (PROTECT.has(w)) return w;
+    const j = JOSA.find(x => w.endsWith(x) && w.length - x.length >= 2);
+    if (!j) break;
+    w = w.slice(0, -j.length);
+  }
+  if (w.endsWith("들") && w.length >= 3) w = w.slice(0, -1);  // 학생들 → 학생
+  return w;
+}
+// phrases printed on every exported PDF; removed before counting PDF/text sources
+const TEMPLATE_PHRASES = ["AI 융합수업 렌즈 기록", "AI 융합수업 기준", "내 렌즈로 본 점 · 근거", "기록 없음",
+  "렌즈 관찰 기록", "의사결정 지점 기록", "나의 생각", "발표자의 선택",
+  ...LENSES.flatMap(l => [l.q, ...l.pts, `${l.name} 관점:`, `${l.name} 렌즈`])];
+function stripTemplate(text) {
+  let t = String(text).replace(/\s+/g, " ");
+  TEMPLATE_PHRASES.forEach(p => { t = t.split(p.replace(/\s+/g, " ")).join(" "); });
+  return t;
+}
+function tokenize(text, templateStop) {
+  const out = [];
+  const cleaned = (templateStop ? stripTemplate(text) : String(text)).replace(/https?:\/\/\S+/g, " ").replace(/[·ㆍ•]/g, " ").replace(/[^0-9A-Za-z가-힣\s]/g, " ");
+  for (let w of cleaned.split(/\s+/)) {
+    if (!w || /^[0-9]/.test(w)) continue;  // 숫자로 시작하는 토큰(3조, 2026 등) 제외
+    if (/[가-힣]/.test(w)) w = stripSuffix(w);
+    if (/^[A-Za-z]+$/.test(w)) w = w.length <= 4 ? w.toUpperCase() : w.toLowerCase();
+    if (w.length < 2) continue;
+    const low = w.toLowerCase();
+    if (STOP.has(w) || STOP.has(low) || isInflected(w)) continue;
+    if (templateStop && TEMPLATE_STOP.has(w)) continue;
+    out.push(w);
+  }
+  return out;
+}
+function bump(map, w, n = 1) { map.set(w, (map.get(w) || 0) + n); }
+function countState(st, cats, map) {
+  if (cats.crit) st.criteria.forEach(c => {
+    const k = c.k.trim().replace(/\s+/g, " ");
+    if (k) { if (k.length <= 14) bump(map, k, 2); else tokenize(k).forEach(w => bump(map, w, 2)); }
+    tokenize(c.d).forEach(w => bump(map, w));
+  });
+  CASES.forEach(cid => {
+    const cs = st.cases[cid];
+    if (cats.obs) cs.obs.forEach(o => tokenize(o.scene + " " + o.note).forEach(w => bump(map, w)));
+    if (cats.dec) cs.dec.forEach(d => tokenize(d.m).forEach(w => bump(map, w)));
+  });
+  return map;
+}
+
+// ================== WORD CLOUD ==================
+const COLORS = ["#003C82", "#1F5FA8", "#2E7BC4", "#0F6E78", "#4A5FA8"];
+const cloudReady = () => typeof window.WordCloud === "function" && WordCloud.isSupported;
+
+async function drawCloud(canvas, emptyEl, counts, excluded, maxWords, onClickWord) {
+  if (!cloudReady()) { emptyEl.hidden = false; emptyEl.textContent = "워드클라우드 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하세요."; return []; }
+  const list = [...counts.entries()].filter(([w]) => !excluded.has(w)).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko")).slice(0, maxWords);
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (!list.length) { emptyEl.hidden = false; emptyEl.textContent = "표시할 단어가 없습니다. 자료나 포함 항목을 확인하세요."; return list; }
+  emptyEl.hidden = true;
+  try { if (document.fonts && document.fonts.load) await document.fonts.load('700 40px "Noto Sans KR"'); } catch (e) {}
+  const max = list[0][1], min = list[list.length - 1][1];
+  const W = canvas.width;
+  const maxSize = W / (list.length < 8 ? 9 : 7.5), minSize = W / 48;
+  WordCloud(canvas, {
+    list,
+    gridSize: Math.round(W / 90),
+    weightFactor: c => (max === min ? maxSize * 0.65 : minSize + (c - min) / (max - min) * (maxSize - minSize)),
+    fontFamily: '"Noto Sans KR", "NanumGothic", "Malgun Gothic", sans-serif',
+    fontWeight: 700,
+    color: (w, weight) => { const r = list.findIndex(x => x[0] === w); return COLORS[Math.min(COLORS.length - 1, Math.floor(r / Math.max(1, list.length / COLORS.length)))]; },
+    rotateRatio: 0,
+    backgroundColor: "#ffffff",
+    shrinkToFit: true,
+    drawOutOfBound: false,
+    click: item => { if (onClickWord) onClickWord(item[0]); },
+  });
+  return list;
+}
+function saveCanvasPng(canvas, base) {
+  canvas.toBlob(b => { if (b) download(safeName(base) + ".png", b); }, "image/png");
+}
+function drawStudentCloud() {
+  const canvas = $("#sCloud"); if (!canvas) return;
+  const counts = countState(state, { crit: true, obs: true, dec: true }, new Map());
+  drawCloud(canvas, $("#sCloudEmpty"), counts, new Set(), 50, null);
+}
+
+// ---------- teacher cloud ----------
+const sources = [];   // {id, name, type, lens, st?, text?}
+const excluded = new Set();
+let lensFilter = "all";
+let srcSeq = 0;
+let lastCounts = null;
+
+function renderLensFilter() {
+  const box = $("#lensFilter"); box.textContent = "";
+  [{ id: "all", name: "전체" }, ...LENSES].forEach(l => box.append(h("button", {
+    type: "button", class: "chip", "aria-pressed": String(lensFilter === l.id),
+    onclick: () => { lensFilter = l.id; renderLensFilter(); if (lastCounts) generate(); },
+  }, l.name)));
+}
+function renderSources() {
+  const ul = $("#srcList"); ul.textContent = "";
+  sources.forEach(s => {
+    const lens = s.lens ? lensById(s.lens) : null;
+    ul.append(h("li", {},
+      h("span", { class: "type", text: s.type.toUpperCase() }),
+      h("span", { text: s.name }),
+      h("span", { class: "meta", text: s.type === "json" ? (lens ? lens.name + " 렌즈" : "렌즈 미선택") : `${(s.text || "").length.toLocaleString()}자` }),
+      h("button", { type: "button", class: "btn ghost small", "aria-label": `${s.name} 빼기`, onclick: () => { sources.splice(sources.indexOf(s), 1); renderSources(); }, text: "빼기" })));
+  });
+  const n = t => sources.filter(s => s.type === t).length;
+  $("#srcSummary").textContent = sources.length
+    ? `기록 파일 ${n("json")}개 · PDF ${n("pdf")}개 · 텍스트 ${n("txt") + n("paste")}개`
+    : "아직 넣은 자료가 없습니다.";
+}
+async function readPdf(file) {
+  if (!window.pdfjsLib) throw new Error("PDF 라이브러리를 불러오지 못했습니다.");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  let text = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const tc = await (await pdf.getPage(i)).getTextContent();
+    text += tc.items.map(it => it.str).join(" ") + "\n";
+  }
+  return text;
+}
+async function addFiles(files) {
+  let added = 0, failed = [];
+  for (const f of files) {
+    const name = f.name; const lower = name.toLowerCase();
+    try {
+      if (lower.endsWith(".json")) {
+        const raw = JSON.parse(await f.text());
+        if (raw.app !== APP_ID) throw new Error("형식");
+        const st = normalizeState(raw);
+        sources.push({ id: ++srcSeq, name, type: "json", lens: st.profile.lens || null, st });
+      } else if (lower.endsWith(".pdf")) {
+        const text = await readPdf(f);
+        if (!text.replace(/\s/g, "")) throw new Error("글자 없음");
+        sources.push({ id: ++srcSeq, name, type: "pdf", lens: null, text });
+      } else {
+        sources.push({ id: ++srcSeq, name, type: "txt", lens: null, text: await f.text() });
+      }
+      added++;
+    } catch (e) { failed.push(name); }
+  }
+  renderSources();
+  if (failed.length) toast(`읽지 못한 파일: ${failed.join(", ")} (스캔 PDF나 다른 형식일 수 있어요)`);
+  else if (added) toast(`자료 ${added}개를 넣었습니다.`);
+}
+function buildCounts() {
+  const cats = { crit: $("#catCrit").checked, obs: $("#catObs").checked, dec: $("#catDec").checked };
+  const map = new Map();
+  sources.forEach(s => {
+    if (s.type === "json") {
+      if (lensFilter !== "all" && s.lens !== lensFilter) return;
+      countState(s.st, cats, map);
+    } else {
+      if (lensFilter !== "all") return;
+      tokenize(s.text, true).forEach(w => bump(map, w));
+    }
+  });
+  return map;
+}
+async function generate() {
+  if (!sources.length) { toast("먼저 자료를 넣어 주세요."); return; }
+  lastCounts = buildCounts();
+  const list = await drawCloud($("#tCloud"), $("#tCloudEmpty"), lastCounts, excluded, +$("#maxWords").value, w => { excluded.add(w); generate(); });
+  renderFreq(list);
+  renderExcluded();
+  const has = list.length > 0;
+  $("#savePng").disabled = !has; $("#cloudFull").disabled = !has;
+}
+function renderFreq(list) {
+  const tb = $("#tFreq"); tb.textContent = "";
+  list.slice(0, 30).forEach(([w, n], i) => tb.append(h("tr", {},
+    h("td", { text: String(i + 1) }), h("td", { text: w }), h("td", { class: "n", text: String(n) }),
+    h("td", {}, h("button", { type: "button", class: "btn ghost small", "aria-label": `${w} 제외`, onclick: () => { excluded.add(w); generate(); }, text: "제외" })))));
+}
+function renderExcluded() {
+  const box = $("#tExcluded"); box.textContent = "";
+  if (!excluded.size) { box.append(h("span", { class: "hint", style: "margin:0", text: "없음" })); return; }
+  [...excluded].forEach(w => box.append(h("button", {
+    type: "button", class: "chip excluded", title: "눌러서 되살리기", "aria-label": `${w} 되살리기`,
+    onclick: () => { excluded.delete(w); generate(); },
+  }, w)));
+}
+
+const drop = $("#drop"), fileInput = $("#fileInput");
+drop.addEventListener("click", () => fileInput.click());
+drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
+fileInput.addEventListener("change", () => { addFiles([...fileInput.files]); fileInput.value = ""; });
+["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => addFiles([...e.dataTransfer.files]));
+$("#addPaste").addEventListener("click", () => {
+  const t = $("#pasteText").value.trim();
+  if (!t) { toast("붙여넣은 텍스트가 없습니다."); return; }
+  sources.push({ id: ++srcSeq, name: `붙여넣은 텍스트 ${sources.filter(s => s.type === "paste").length + 1}`, type: "paste", lens: null, text: t });
+  $("#pasteText").value = ""; renderSources(); toast("텍스트를 넣었습니다.");
+});
+$("#genCloud").addEventListener("click", generate);
+$("#maxWords").addEventListener("input", e => { $("#maxWordsVal").textContent = e.target.value; });
+$("#maxWords").addEventListener("change", () => { if (lastCounts) generate(); });
+["catCrit", "catObs", "catDec"].forEach(id => $("#" + id).addEventListener("change", () => { if (lastCounts) generate(); }));
+$("#savePng").addEventListener("click", () => saveCanvasPng($("#tCloud"), `워드클라우드_${lensFilter === "all" ? "전체" : lensById(lensFilter).name}`));
+$("#cloudFull").addEventListener("click", () => { const el = $("#tCloudWrap"); if (el.requestFullscreen) el.requestFullscreen(); });
+
+// ================== TIMER ==================
+const timer = { total: 120, remain: 120, running: false, endAt: 0, iv: null, done: false };
+let audioCtx = null;
+const fmt = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+const PRESETS = [{ m: 2, label: "2분 · 조별 논의" }, { m: 10, label: "10분 · 정리" }, { m: 20, label: "20분 · 조별 통합" }];
+
+function timerRender() {
+  const txt = fmt(timer.remain);
+  $("#bigDigits").textContent = txt; $("#miniDigits").textContent = txt;
+  const btnTxt = timer.running ? "일시정지" : (timer.remain < timer.total && timer.remain > 0 ? "계속" : "시작");
+  $("#bigToggle").textContent = btnTxt;
+  $("#miniToggle").textContent = timer.running ? "정지" : "시작";
+  $("#miniToggle").setAttribute("aria-label", timer.running ? "타이머 일시정지" : "타이머 시작");
+  $("#bigTimer").classList.toggle("done", timer.done);
+  $("#miniTimer").classList.toggle("done", timer.done);
+  $("#bigLabel").textContent = timer.done ? "시간이 끝났습니다" : (timer.running ? "진행 중" : "타이머");
+}
+function timerSet(sec) {
+  clearInterval(timer.iv); timer.running = false; timer.done = false;
+  timer.total = timer.remain = Math.max(1, Math.round(sec)); timerRender();
+}
+function timerStart() {
+  if (timer.remain <= 0) timer.remain = timer.total;
+  timer.done = false;
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === "suspended") audioCtx.resume(); } catch (e) {}
+  timer.endAt = Date.now() + timer.remain * 1000; timer.running = true;
+  clearInterval(timer.iv); timer.iv = setInterval(timerTick, 200); timerRender();
+}
+function timerPause() {
+  clearInterval(timer.iv); timer.running = false;
+  timer.remain = Math.max(0, Math.ceil((timer.endAt - Date.now()) / 1000)); timerRender();
+}
+function timerTick() {
+  timer.remain = Math.max(0, Math.ceil((timer.endAt - Date.now()) / 1000));
+  if (timer.remain === 0) { clearInterval(timer.iv); timer.running = false; timer.done = true; beep(); }
+  timerRender();
+}
+function beep() {
+  if (!audioCtx) return;
+  try {
+    [0, 0.45, 0.9].forEach(t => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = 880; o.type = "sine";
+      g.gain.setValueAtTime(0.0001, audioCtx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.35, audioCtx.currentTime + t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + t + 0.35);
+      o.connect(g).connect(audioCtx.destination); o.start(audioCtx.currentTime + t); o.stop(audioCtx.currentTime + t + 0.4);
+    });
+  } catch (e) {}
+}
+function buildPresets(box) {
+  PRESETS.forEach(p => box.append(h("button", { type: "button", class: "btn", onclick: () => timerSet(p.m * 60), text: p.label })));
+  const inp = h("input", { type: "number", class: "custom-min", min: 1, max: 180, value: 5, "aria-label": "분 직접 입력" });
+  box.append(h("span", { class: "row", style: "gap:6px" }, inp, "분",
+    h("button", { type: "button", class: "btn ghost", onclick: () => { const m = parseFloat(inp.value); if (m > 0) timerSet(m * 60); }, text: "설정" })));
+}
+buildPresets($("#bigPresets")); buildPresets($("#miniPresets"));
+document.querySelectorAll('[data-timer="toggle"]').forEach(b => b.addEventListener("click", () => (timer.running ? timerPause() : timerStart())));
+document.querySelectorAll('[data-timer="reset"]').forEach(b => b.addEventListener("click", () => timerSet(timer.total)));
+$("#bigFull").addEventListener("click", () => { const el = $("#bigTimer"); if (el.requestFullscreen) el.requestFullscreen(); });
+$("#miniExpand").addEventListener("click", () => {
+  const mt = $("#miniTimer"); const open = mt.classList.toggle("collapsed") === false;
+  $("#miniExpand").setAttribute("aria-expanded", String(open));
+});
+
+// ================== INIT ==================
+const syncTopbar = () => document.documentElement.style.setProperty("--topbar-h", $(".topbar").offsetHeight + "px");
+window.addEventListener("resize", syncTopbar);
+syncTopbar();
+renderLensFilter();
+renderSources();
+timerRender();
+if (state.updatedAt) $("#saveStatus").textContent = "저장된 기록 있음";
+const lastMode = store.get(MODE_KEY);
+setMode(lastMode === "student" || lastMode === "teacher" ? lastMode : "home");
+})();
+</script>
+</body>
+</html>
